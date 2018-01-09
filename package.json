@@ -1,0 +1,20 @@
+{
+  "name": "gulp-resource-timestamp",
+  "version": "0.0.4",
+  "author": {
+    "name": "Witalij Kaa"
+  },
+  "dependencies": {
+    "file-system": "^2.2.2",
+    "gulp-util": "^3.0.7",
+    "through2": "^2.0.0"
+  },
+  "description": "Adds a timestamp to graphic resources.",
+  "keywords": [
+    "gulp-resource-timestamp",
+    "timestamp",
+    "graphics"
+  ],
+  "license": "MIT",
+  "main": "gulp-resource-timestamp.js"
+}
