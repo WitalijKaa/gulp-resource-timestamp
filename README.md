@@ -12,6 +12,8 @@ Install with [npm](https://www.npmjs.com/package/gulp-resource-timestamp)
 npm install --save gulp-resource-timestamp
 ```
 
+Download from [GitHub](https://github.com/WitalijKaa/gulp-resource-timestamp)
+
 ## Example
 
 ```js
