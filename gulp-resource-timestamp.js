@@ -28,7 +28,7 @@ return through.obj(function (file, enc, cb) { // comments is in russian
     targetFormats = '(' + targetFormats.join('|') + ')';
 
     // во втором захвате мы ищем либо простую строку-путь после imagesDir либо что-то наподобие '/images/fileName-' + ix + '.png'
-    let rExp = new RegExp('(["\']\\/' + imagesDir + '\\/)([^"\'\\n\\r]+?|[^"\'\\n\\r]+?["\']\\s?\\+\\s?[^"\'\\n\\r]{2,}?\\s?\\+\\s?["\'])' + targetFormats + '(["\'])', 'ig');
+    let rExp = new RegExp('(["\']\\/' + imagesDir + '\\/)([^"\'\\n\\r]+?|[^"\'+\\s\\n\\r]+?["\']\\s?\\+\\s?[^"\'+\\s\\n\\r]{2,}?\\s?\\+\\s?["\'])' + targetFormats + '(["\'])', 'ig');
 
     let content = String(file.contents).replace(rExp,
 
