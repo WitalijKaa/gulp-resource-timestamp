@@ -9,7 +9,7 @@
 Install with [npm](https://www.npmjs.com/package/gulp-resource-timestamp)
 
 ```
-npm install --save-dev gulp-resource-timestamp
+npm install --save gulp-resource-timestamp
 ```
 
 ## Example
@@ -32,8 +32,9 @@ Please notice, that if you have multiple image files that renders for example wi
 ```
 
 - Than file images indexes has to be placed at and of file name.
-- There has to be file with index 1.
+- There has to be file with index between 0 and 99. And at least 1 file with index 100 to 199 so that the search continues.
 - The variable for iterations has to be at least 2 letters long, so i or n would not work.
+- Timestamp will be found from the file with latest update, so change of any file will excite the change of timestamp value.
 
 ## Options
 

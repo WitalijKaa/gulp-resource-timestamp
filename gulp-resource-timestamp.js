@@ -1,12 +1,14 @@
-var through = require('through2'),
+'use strict';
+let through = require('through2'),
     gulpUtil = require('gulp-util'),
     fs = require('fs'),
     PluginError = gulpUtil.PluginError;
 
 const PLUGIN_NAME = 'gulp-resource-timestamp';
+const SEARCH_RANGE_LIMIT = 100;
 
 function gulpResourceTimestamp(basePath, imagesDir, targetFormats) {
-return through.obj(function (file, enc, cb) {
+return through.obj(function (file, enc, cb) { // comments is in russian
 
     if (file.isStream()) {
         this.emit('error', new PluginError(PLUGIN_NAME, 'Streams are not supported!'));
@@ -19,33 +21,69 @@ return through.obj(function (file, enc, cb) {
         targetFormats = ['png', 'jpg', 'jpeg', 'bmp', 'gif', 'svg'];
     }
 
-    var i;
+    let i;
     for (i = 0; i < targetFormats.length; i++) {
-        targetFormats[i] = '\\.' + targetFormats[i];
+        targetFormats[i] = '\\.' + targetFormats[i]; // этот слеш-экран добавлен потому что ниже мы делаем (\.png|\.jpg) то есть точка должны быть точкой а не любым символом
     }
     targetFormats = '(' + targetFormats.join('|') + ')';
 
-    var rExp = new RegExp('(["\']\\/' + imagesDir + '\\/)([^"\'\\n\\r]+?|[^"\'\\n\\r].?["\']\\+[^"\'\\n\\r]{2,}?\\+["\'])' + targetFormats + '(["\'])', 'ig');
+    // во втором захвате мы ищем либо простую строку-путь после imagesDir либо что-то наподобие '/images/fileName-' + ix + '.png'
+    let rExp = new RegExp('(["\']\\/' + imagesDir + '\\/)([^"\'\\n\\r]+?|[^"\'\\n\\r]+?["\']\\s?\\+\\s?[^"\'\\n\\r]{2,}?\\s?\\+\\s?["\'])' + targetFormats + '(["\'])', 'ig');
 
-    var content = String(file.contents).replace(rExp,
+    let content = String(file.contents).replace(rExp,
 
-        function(match, folder, path, format, end) {
+        function (match, folder, path, format, end) {
 
-            var pathForFile = path;
-            var firstPlus = pathForFile.indexOf(' + ');
-            var secondPlus = pathForFile.indexOf(' + ', firstPlus + 4);
-            if (firstPlus > 1 && secondPlus > firstPlus) {
-                pathForFile = pathForFile.slice(0, firstPlus - 1) + '1' + pathForFile.slice(secondPlus + 4);
+            let getTimestamp = function (filePath) {
+                let fileResource = fs.statSync(filePath);
+                return Math.round((new Date(fileResource.mtime)).getTime() / 1000);
+            };
+
+            let ix;
+            let pathForFile = path;
+            let isArrayMode = false;
+
+            // если у нас файл из Vue.JS v-for подобной конструкции, например "src": '/images/fileName-' + ix + '.png'
+            let quot = pathForFile.indexOf('"');
+            if (quot < 0) { quot = pathForFile.indexOf("'"); }
+            if (quot > 1) { // то найдем кавычку перед плюсом и запомним вес "статический" путь к массиву файлов
+                pathForFile = pathForFile.slice(0, quot);
+                isArrayMode = true;
             }
 
-            var filePath = basePath + '/' + imagesDir + '/' + pathForFile + format;
+            let filePath;
+            let timestamp;
 
-            if (!fs.existsSync(filePath)) { return match; }
+            if (!isArrayMode) {
+                filePath = basePath + '/' + imagesDir + '/' + pathForFile + format;
+                if (!fs.existsSync(filePath)) { return match; }
+                timestamp = getTimestamp(filePath);
+            }
+            else {
+                let fileExists = false;
+                let searchRangeStart = 0 - SEARCH_RANGE_LIMIT;
+                let searchRangeEnd = 0;
+                let highestTimestamp = 0;
+                let foundCount = 1;
 
-            var fileResource = fs.statSync(filePath);
+                while (foundCount > 0) {
+                    searchRangeStart += SEARCH_RANGE_LIMIT;
+                    searchRangeEnd += SEARCH_RANGE_LIMIT;
+                    foundCount = 0;
+                    for (ix = searchRangeStart; ix < searchRangeEnd; ix++) {
+                        filePath = basePath + '/' + imagesDir + '/' + pathForFile + ix + format;
+                        if (fs.existsSync(filePath)) {
+                            fileExists = true;
+                            foundCount++;
+                            let currentTimestamp = getTimestamp(filePath);
+                            if (highestTimestamp < currentTimestamp) { highestTimestamp = currentTimestamp; }
+                        }
+                    }
+                }
 
-            var mtime = new Date(fileResource.mtime);
-            var timestamp = Math.round(mtime.getTime()/1000);
+                if (!fileExists) { return match; }
+                timestamp = highestTimestamp;
+            }
 
             return folder + path + format + '?' + timestamp + end;
         }
